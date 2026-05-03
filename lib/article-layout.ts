@@ -742,6 +742,27 @@ function stripRedundantArticleLead(markdown: string, title: string) {
     }
   }
 
+  if (cursor < lines.length) {
+    const normalizedTitle = title.replace(/\s+/g, "");
+    const currentLine = lines[cursor]
+      .trim()
+      .replace(/^\*\*/, "")
+      .replace(/\*\*$/, "");
+    const normalizedCurrent = currentLine
+      .replace(/^标题[:：]\s*/, "")
+      .replace(/\s+/g, "");
+
+    if (
+      /^标题[:：]/.test(currentLine) &&
+      normalizedCurrent === normalizedTitle
+    ) {
+      cursor += 1;
+      while (cursor < lines.length && !lines[cursor].trim()) {
+        cursor += 1;
+      }
+    }
+  }
+
   return lines.slice(cursor).join("\n").trim();
 }
 
