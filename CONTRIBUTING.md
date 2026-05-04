@@ -64,12 +64,23 @@ before you begin:
    winget install -e --id Rustlang.Rustup
    winget install -e --id LLVM.LLVM
    winget install -e --id Kitware.CMake
-   winget install -e --id GnuWin32.UnZip
    winget install -e --id Git.Git
-   winget install -e --id JernejSimoncic.Wget
    winget install -e --id 7zip.7zip
    irm https://bun.sh/install.ps1 | iex
    ```
+
+   > **Note**: You also need `wget` for the pre-build step. If `winget install JernejSimoncic.Wget` fails, use scoop:
+   >
+   > ```powershell
+   > scoop install wget
+   > ```
+   >
+   > If you don't have scoop:
+   >
+   > ```powershell
+   > irm get.scoop.sh | iex
+   > scoop install wget 7zip
+   > ```
 
 3. **set environment variables**:
    ```powershell
@@ -79,15 +90,43 @@ before you begin:
 
 4. **clone the project**:
    ```powershell
-      git clone https://github.com/screenpipe/screenpipe.git
-      cd screenpipe
-   ```
-5. **build**:
-   ```powershell
+   git clone https://github.com/screenpipe/screenpipe.git
    cd screenpipe
-   cargo build --release
-   cd apps/screenpipe-app-tauri
+   ```
+
+5. **build the rust workspace**:
+   ```powershell
+   cargo build --profile release-dev
+   ```
+   > **Tip**: Use `--profile release-dev` for fast local builds (~3-5x faster than `--release`). The binary lands in `target/release-dev/screenpipe.exe`.
+
+6. **run the CLI** (backend only, no UI):
+   ```powershell
+   .\target\release-dev\screenpipe.exe record
+   ```
+   The REST API will be available at `http://localhost:3030`.
+
+7. **build & run the desktop app** (Tauri + Next.js):
+   ```powershell
+   cd apps\screenpipe-app-tauri
    bun install
+   bun tauri dev
+   ```
+   > **Important**: The first `bun tauri dev` will:
+   > - Run `pre_build.js` which downloads ffmpeg (~53MB), OpenBLAS, and copies the bun binary into `src-tauri/`.
+   > - Compile the Tauri Rust side, which takes **~10 minutes** on first run. Subsequent builds are much faster thanks to cargo incremental compilation.
+   >
+   > If `pre_build.js` fails (e.g. `wget not found`), install it and rerun:
+   >
+   > ```powershell
+   > scoop install wget 7zip
+   > bun scripts\pre_build.js
+   > bun tauri dev
+   > ```
+
+8. **build for distribution**:
+   ```powershell
+   cd apps\screenpipe-app-tauri
    bun tauri build
    ```
 
